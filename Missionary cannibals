@@ -1,0 +1,75 @@
+from collections import deque
+
+class State:
+    def __init__(self, missionaries, cannibals, boat):
+        self.missionaries = missionaries
+        self.cannibals = cannibals
+        self.boat = boat
+
+    def __eq__(self, other):
+        return self.missionaries == other.missionaries and \
+               self.cannibals == other.cannibals and \
+               self.boat == other.boat
+
+    def __hash__(self):
+        return hash((self.missionaries, self.cannibals, self.boat))
+
+    def is_valid(self):
+        if self.missionaries < 0 or self.cannibals < 0 or \
+           self.missionaries > 3 or self.cannibals > 3 or \
+           (self.missionaries != 0 and self.missionaries < self.cannibals):
+            return False
+        return True
+
+    def successors(self):
+        moves = [(1, 0), (2, 0), (0, 1), (0, 2), (1, 1)]
+
+        if self.boat == 'left':
+            return [State(self.missionaries - m, self.cannibals - c, 'right')
+                    for m, c in moves
+                    if self.missionaries - m >= 0 and self.cannibals - c >= 0] \
+                   + [State(self.missionaries + m, self.cannibals + c, 'left')
+                      for m, c in moves
+                      if self.missionaries + m <= 3 and self.cannibals + c <= 3]
+        else:
+            return [State(self.missionaries + m, self.cannibals + c, 'left')
+                    for m, c in moves
+                    if self.missionaries + m <= 3 and self.cannibals + c <= 3] \
+                   + [State(self.missionaries - m, self.cannibals - c, 'right')
+                      for m, c in moves
+                      if self.missionaries - m >= 0 and self.cannibals - c >= 0]
+
+def bfs(start, goal):
+    if start == goal:
+        return [start]
+
+    queue = deque([(start, [])])
+    visited = set()
+    visited.add(start)
+
+    while queue:
+        current_state, path = queue.popleft()
+
+        for successor in current_state.successors():
+            if successor.is_valid() and successor not in visited:
+                if successor == goal:
+                    return path + [current_state, successor]
+
+                visited.add(successor)
+                queue.append((successor, path + [current_state]))
+
+    return None
+
+def print_solution(solution):
+    if solution is None:
+        print("No solution found.")
+    else:
+        for i, state in enumerate(solution):
+            print(f"Step {i + 1}: Missionaries={state.missionaries}, Cannibals={state.cannibals}, Boat={state.boat}")
+
+# Example usage:
+start_state = State(3, 3, 'left')
+goal_state = State(0, 0, 'right')
+
+solution = bfs(start_state, goal_state)
+print_solution(solution)
